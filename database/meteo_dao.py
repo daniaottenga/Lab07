@@ -24,4 +24,3 @@ class MeteoDao():
             cnx.close()
         return result
 
-

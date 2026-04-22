@@ -9,8 +9,10 @@ class View(ft.UserControl):
         self._page.title = "Laboratorio 07 - Ricorsione"
         self._page.horizontal_alignment = 'CENTER'
         self._page.theme_mode = ft.ThemeMode.LIGHT
+
         # controller (it is not initialized. Must be initialized in the main, after the controller is created)
         self._controller = None
+
         # graphical elements
         self._title = None
         self.dd_mese: ft.Dropdown = None
@@ -46,8 +48,8 @@ class View(ft.UserControl):
                                              on_click=self._controller.handle_umidita_media)
 
         self.btn_calcola_sequenza = ft.ElevatedButton(text="Calcola sequenza",
-                                             tooltip="Calcola la sequenza ottimale per le analisi",
-                                             on_click=self._controller.handle_sequenza)
+                                                      tooltip="Calcola la sequenza ottimale per le analisi",
+                                                      on_click=self._controller.handle_sequenza)
         row1 = ft.Row([self.dd_mese, self.btn_umidita, self.btn_calcola_sequenza],
                       alignment=ft.MainAxisAlignment.CENTER)
         self._page.controls.append(row1)
@@ -57,22 +59,27 @@ class View(ft.UserControl):
         self._page.controls.append(self.lst_result)
         self._page.update()
 
+
     @property
     def controller(self):
         return self._controller
+
 
     @controller.setter
     def controller(self, controller):
         self._controller = controller
 
+
     def set_controller(self, controller):
         self._controller = controller
+
 
     def create_alert(self, message):
         dlg = ft.AlertDialog(title=ft.Text(message))
         self._page.dialog = dlg
         dlg.open = True
         self._page.update()
+
 
     def update_page(self):
         self._page.update()
