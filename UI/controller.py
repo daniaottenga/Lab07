@@ -70,15 +70,15 @@ class Controller:
         localita, result = self.situazioni_del_mese(True)
         result.sort(key=lambda x: x.data.day)
 
-        self.calcola(result)
-        ris_value = min(self._soluzioni_sequenza)
-        ris_sequenza = self._soluzioni_sequenza[ris_value]
+        self.calcola_percorsi(result)
+        valore_ottimo = min(self._soluzioni_sequenza)
+        percorso_ottimo = self._soluzioni_sequenza[valore_ottimo]
 
         self._view.lst_result.controls.append(
-            ft.Text(f"La sequenza ottima ha valore {ris_value}"))
+            ft.Text(f"La sequenza ottima ha valore {valore_ottimo}"))
 
-        for r in ris_sequenza:
-            self._view.lst_result.controls.append(ft.Text(r))
+        for r in percorso_ottimo:
+           self._view.lst_result.controls.append(ft.Text(r))
 
         self._view.update_page()
 
@@ -103,92 +103,92 @@ class Controller:
         return localita, result
 
 
-    def calcola(self, tutte):
-        self.recursion([], tutte, 1, 0, 0, 0, 0)
+    def calcola_percorsi(self, result):
+        self._soluzioni_sequenza.clear()
+        self.ricorsione(result, [], 0, 0, 0, 0, 1)
 
 
-    def recursion(self, visitate, tutte, giorno, costo, milano_cnt, torino_cnt, genova_cnt):
-        # se sono arrivato al giorno 16
+    def ricorsione(self, da_percorrere, percorso, costo,
+                   torino_cnt, milano_cnt, genova_cnt, giorno):
+
         if giorno == 16:
-            self._soluzioni_sequenza[costo] = visitate
+            self._soluzioni_sequenza[costo] = percorso
 
         else:
-            # seleziono le situazioni della giornata di oggi che non siano state già visitate 6 volte
-            visitabili = []
-            cambio = False
-            tutte_c = copy.deepcopy(tutte)
 
-            for t in tutte:
-                if t.data.day != giorno:
+            costo_aggiuntivo = 0
+            cambio = False
+            rimango = False
+
+            # seleziono i posti possibilmente visitabili della giornata
+            possibili = []
+            for elem in da_percorrere:
+                if elem.data.day == giorno:
+                    possibili.append(elem)
+                else:
                     break
 
-                if t.localita == "Genova":
-                    tutte_c.pop(0)
-                    if genova_cnt < 6:
-                        visitabili.append(t)
+            for i in range(len(possibili)):
+                da_percorrere.pop(0)
 
-                elif t.localita == "Milano":
-                    tutte_c.pop(0)
-                    if milano_cnt < 6:
-                        visitabili.append(t)
-
-                elif t.localita == "Torino":
-                    tutte_c.pop(0)
-                    if torino_cnt < 6:
-                        visitabili.append(t)
-
-            # se è la prima che visito posso visitarle tutte
-            if len(visitate) == 0:
+            # controllo se devo rimanere scegliere una città a caso
+            if len(percorso) == 0:
                 pass
-
-            # se ne ho già visitata una tre volte di fila devo cambiare città
-            elif len(visitate) >= 3 and visitate[-1].localita == visitate[-2].localita == visitate[-3].localita:
-                citta_attuale = visitate[-1].localita
-                copia = copy.deepcopy(visitabili)
+            # se devo cambiare città
+            elif len(percorso) >= 3 and percorso[-1].localita == percorso[-2].localita == percorso[-3].localita:
                 cambio = True
-
-                for elem in copia:
-                    if elem.localita == citta_attuale:
-                        visitabili.remove(elem)
-
-            # non devo cambiare città
+            # se devo rimanere nella mia città
             else:
-                citta_attuale = visitate[-1].localita
-                copia = copy.deepcopy(visitabili)
-                for elem in copia:
-                    if elem.localita != citta_attuale:
-                        visitabili.remove(elem)
+                rimango = True
 
-            if len(visitabili) > 0:
-                self.aggiornamento(visitate, tutte_c, giorno, costo,
-                                   milano_cnt, torino_cnt, genova_cnt, visitabili, cambio)
+            for possibile in possibili:
 
-    def aggiornamento(self, visitate, tutte_c, giorno, costo, milano_cnt, torino_cnt, genova_cnt, visitabili, cambio):
-        for citta in visitabili:
-            visitate_c = copy.deepcopy(visitate)
-            visitate_c.append(citta)
-
-            if citta.localita == "Torino":
-                if cambio is True:
-                    self.recursion(visitate_c, tutte_c, giorno + 1, costo + citta.umidita + 100,
-                               milano_cnt, torino_cnt + 1, genova_cnt)
+                # cambio città
+                if cambio == True and possibile.localita != percorso[-1].localita:
+                    costo_aggiuntivo += 100
+                # rimango nella città
+                elif rimango == True and possibile.localita == percorso[-1].localita:
+                    pass
+                # sono nella prima città
+                elif rimango == False and cambio == False:
+                    pass
                 else:
-                    self.recursion(visitate_c, tutte_c, giorno + 1, costo + citta.umidita,
-                               milano_cnt, torino_cnt + 1, genova_cnt)
+                    continue
 
-            elif citta.localita == "Milano":
+                if possibile.localita == "Torino":
+                    if torino_cnt > 5:
+                        continue
+                    else:
+                        torino_cnt += 1
+                elif possibile.localita == "Milano":
+                    if milano_cnt > 5:
+                        continue
+                    else:
+                        milano_cnt += 1
+                elif possibile.localita == "Genova":
+                    if genova_cnt > 5:
+                        continue
+                    else:
+                        genova_cnt += 1
+
+                percorso.append(possibile)
+                da_percorrereC = copy.deepcopy(da_percorrere)
+                percorsoC = copy.deepcopy(percorso)
+
+                self.ricorsione(da_percorrereC, percorsoC, costo + possibile.umidita + costo_aggiuntivo,
+                                torino_cnt, milano_cnt, genova_cnt, giorno + 1)
+
                 if cambio is True:
-                    self.recursion(visitate_c, tutte_c, giorno + 1, costo + citta.umidita + 100,
-                               milano_cnt + 1, torino_cnt, genova_cnt)
-                else:
-                    self.recursion(visitate_c, tutte_c, giorno + 1, costo + citta.umidita,
-                               milano_cnt + 1, torino_cnt, genova_cnt)
+                    costo -= costo_aggiuntivo
 
-            else:
-                if cambio is True:
-                    self.recursion(visitate_c, tutte_c, giorno + 1, costo + citta.umidita + 100,
-                               milano_cnt, torino_cnt, genova_cnt + 1)
-                else:
-                    self.recursion(visitate_c, tutte_c, giorno + 1, costo + citta.umidita,
-                               milano_cnt, torino_cnt, genova_cnt + 1)
+                percorso.remove(possibile)
 
+                if possibile.localita == "Torino":
+                    torino_cnt -= 1
+                elif possibile.localita == "Milano":
+                    milano_cnt -= 1
+                else:
+                    genova_cnt -= 1
+
+            for i in possibili:
+                da_percorrere.insert(0, i)
